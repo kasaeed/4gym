@@ -14,7 +14,7 @@ class DeltaHedge(gym.Env):
                  
     self.s = spot_price
     self.k = strike_price
-    self.m = time2maturity
+    self.m = time2maturity / 12
     self.dt = 1/time_discrete
     self.ttm = 21 * self.m * self.dt  # convert month to reaction time unit
     self.hedge = stock_share
