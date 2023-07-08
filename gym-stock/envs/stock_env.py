@@ -18,7 +18,6 @@ class DeltaHedge(gym.Env):
                  
     self.s = spot_price
     self.k = strike_price
-    self.m = time2maturity / 12
     self.dt = 1/time_discrete
     self.ttm = 21 * self.m * self.dt  # convert month to reaction time unit
     self.hedge = stock_share
@@ -30,7 +29,7 @@ class DeltaHedge(gym.Env):
     self.kappa = kappa
     self.cost = transaction_cost
 
-    self.state = None
+    self.states = None
     self.initials = (self.s/self.k, self.ttm, self.hedge)
 
     self.reset()    
@@ -40,23 +39,23 @@ class DeltaHedge(gym.Env):
     return [seed]
     
   def reset(self):
-    self.state = self.initials[:-1]
+    self.states = self.initials[:-1]
     self.hedge = self.initials[2]
     self.counter = 0
 
   def step(self, action):
     self.counter += 1
-    state = self.state
+    state = self.states
 
-    s_1 = self.state[0] * self.k
+    s_1 = self.states[0] * self.k
     s = s_1 * ((1 + self.mu * self.dt) + (np.randn * self.vol) * np.sqrt(self.dt))
 
-    self.ttm = max(0, self.state[1] - self.dt)
+    self.ttm = max(0, self.states[1] - self.dt)
     done = self.ttm < self.dt
 
     lp = (s - s_1) * self.hedge - abs(action - self.hedge) * s * self.kappa -\
       self.bs_price(s, self.k, self.rf, self.ttm, self.vol) +\
-      self.bs_price(s_1, self.k, self.rf, self.state[1], self.vol)
+      self.bs_price(s_1, self.k, self.rf, self.states[1], self.vol)
 
     if done:
       lp = lp - action * s * self.kappa
@@ -64,23 +63,27 @@ class DeltaHedge(gym.Env):
     reward = lp - self.cost * lp^2
     next_state = (s/self.k, self.ttm)
     self.hedge = action
-    self.state = next_state
+    self.states = next_state
 
     return state, reward, done, next_state
 
-  def bs_price(self):
-    d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
-    d2 = d1 - self.vol * np.sqrt(self.m)
-    call_bs_price = self.s * np.exp(-self.m * self.div) * norm.cdf(d1) - self.k * np.exp(-self.m * self.rf) * norm.cdf(d2)
-    put_bs_price = -self.s * np.exp(-self.m * self.div) * norm.cdf(-d1) + self.k * np.exp(-self.m * self.rf) * norm.cdf(-d2)
+  def bs_price(self, spot_price, time_to_maturity):
+    s = spot_price
+    ttm = time_to_maturity
+    d1 = (np.log(s/self.k) + ttm * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(ttm))
+    d2 = d1 - self.vol * np.sqrt(ttm)
+    call_bs_price = s * np.exp(-ttm * self.div) * norm.cdf(d1) - self.k * np.exp(-ttm * self.rf) * norm.cdf(d2)
+    put_bs_price = -s * np.exp(-ttm * self.div) * norm.cdf(-d1) + self.k * np.exp(-ttm * self.rf) * norm.cdf(-d2)
     return call_bs_price, put_bs_price
     
-  def greeks(self):
-    d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
+  def greeks(self, spot_price, time_to_maturity):
+    s = spot_price
+    ttm = time_to_maturity
+    d1 = (np.log(s/self.k) + ttm * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(ttm))
     
-    call_delta =  norm.cdf(d1) * np.exp(-self.m * self.div)
-    put_delta = (1 - norm.cdf(d1)) * np.exp(-self.m * self.div)
-
+    call_delta =  norm.cdf(d1) * np.exp(-ttm * self.div)
+    put_delta = (1 - norm.cdf(d1)) * np.exp(-ttm * self.div)
+    
     nd1p = self.exp(-(d1**2)/2)/np.sqrt(2*np.pi)
-    gamma = (np.exp(-self.m * self.div) * nd1p) / (self.s * self.vol * np.sqrt(self.m))
+    gamma = (np.exp(-ttm * self.div) * nd1p) / (s * self.vol * np.sqrt(ttm))
     return call_delta, put_delta, gamma
