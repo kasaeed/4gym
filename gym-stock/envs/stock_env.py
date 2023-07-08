@@ -13,7 +13,7 @@ class DeltaHedge(gym.Env):
                transaction_cost=1.5, dividend_yield=.0):
 
     self.action_space = spaces.Box(low=0, high=1, shape=(1,))
-    self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(3,))
+    self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2,))
     self._seed()
                  
     self.s = spot_price
@@ -33,16 +33,19 @@ class DeltaHedge(gym.Env):
     self.state = None
     self.initials = (self.s/self.k, self.ttm, self.hedge)
 
-    self.reset()
+    self.reset()    
   
   def _seed(self, seed=None):
     self.np_random, seed = seeding.np_random(seed)
     return [seed]
     
   def reset(self):
-    self.state = self.initials
+    self.state = self.initials[:-1]
+    self.hedge = self.initials[2]
+    self.counter = 0
 
   def step(self, action):
+    self.counter += 1
     state = self.state
 
     s_1 = self.state[0] * self.k
