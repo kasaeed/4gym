@@ -46,7 +46,7 @@ class DeltaHedge(gym.Env):
     state = self.state
     pos = action
 
-    s_1 = self.state[0] * self.strike
+    s_1 = self.state[0] * self.k
     s = s_1 * ((1 + self.mu * self.dt) + (np.randn * self.vol) * np.sqrt(self.dt))
 
     ttm = max(0, self.state[1] - self.dt)
@@ -68,9 +68,16 @@ class DeltaHedge(gym.Env):
   def bs_price(self):
     d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
     d2 = d1 - self.vol * np.sqrt(self.m)
-    call_bs_price = self.s * np.exp(-self.m * self.div) * norm.cdf(d1) - self.k * np.exp(-self.rf * self.m) * norm.cdf(d2)
-    put_bs_price = -self.s * np.exp(-self.m * self.div) * norm.cdf(-d1) + self.k * np.exp(-self.rf * self.m) * norm.cdf(-d2)
-
-    return call_bs_price
+    call_bs_price = self.s * np.exp(-self.m * self.div) * norm.cdf(d1) - self.k * np.exp(-self.m * self.rf) * norm.cdf(d2)
+    put_bs_price = -self.s * np.exp(-self.m * self.div) * norm.cdf(-d1) + self.k * np.exp(-self.m * self.rf) * norm.cdf(-d2)
+    return call_bs_price, put_bs_price
+    
   def greeks(self):
-    pass
+    d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
+    
+    call_delta =  norm.cdf(d1) * np.exp(-self.m * self.div)
+    put_delta = (1 - norm.cdf(d1)) * np.exp(-self.m * self.div)
+
+    nd1p = self.exp(-(d1**2)/2)/np.sqrt(2*np.pi)
+    gamma = (np.exp(-self.m * self.div) * nd1p) / (self.s * self.vol * np.sqrt(self.m))
+    return call_delta, put_delta, gamma
