@@ -1,6 +1,10 @@
 import numpy as np
+from scipy.stats import norm
+
 import gym
 from gym import spaces
+from gym.utils import seeding
+
 
 class DeltaHedge(gym.Env):
   def __init__(self, spot_price: float=100, strike_price: float=100,
@@ -40,20 +44,17 @@ class DeltaHedge(gym.Env):
 
   def step(self, action):
     state = self.state
-    m_1 = self.state[0]
-    ttm_1 = self.state[1]
-    pos_1 = self.state[2]
     pos = action
 
-    s_1 = m_1 * self.strike
-    s = s_1 * ((1+self.mu * self.dt) + (np.randn * self.vol) * np.sqrt(self.dt))
+    s_1 = self.state[0] * self.strike
+    s = s_1 * ((1 + self.mu * self.dt) + (np.randn * self.vol) * np.sqrt(self.dt))
 
-    ttm = max(0, ttm_1 - self.dt)
+    ttm = max(0, self.state[1] - self.dt)
     done = ttm < self.dt
 
-    lp = (s - s_1) * pos_1 - abs(pos - pos_1) * s * self.kappa -\
+    lp = (s - s_1) * self.state[2] - abs(pos - self.state[2]) * s * self.kappa -\
       self.bs_price(s, self.k, self.rf, ttm, self.vol) +\
-      self.bs_price(s_1, self.k, self.rf, ttm_1, self.vol)
+      self.bs_price(s_1, self.k, self.rf, self.state[1], self.vol)
 
     if done:
       lp = lp - pos * s * self.kappa
@@ -65,8 +66,9 @@ class DeltaHedge(gym.Env):
     return state, reward, done, next_state
 
   def bs_price(self):
-    d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + self.vol**2 / 2.0)) / (self.vol * np.sqrt(self.m))
+    d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
     d2 = d1 - self.vol * np.sqrt(self.m)
+    self.s * np.exp(-self.m * self.div) * norm.cdf(d1) - self.k * np.exp(-self.rf * self.m) * norm.cdf(d2)
 
     return call_bs_price
   def greeks(self):
