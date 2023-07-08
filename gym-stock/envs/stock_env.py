@@ -8,7 +8,7 @@ from gym.utils import seeding
 
 class DeltaHedge(gym.Env):
   def __init__(self, spot_price: float=100, strike_price: float=100,
-               time2maturity: int=3, time_discrete: int=250, stock_share: float=0,
+               month2maturity: int=3, year_days: int=250, stock_share: float=0,
                exp_volatility=.2, exp_return=.05, risk_free=0.03, kappa=.01,
                transaction_cost=1.5, dividend_yield=.0):
 
@@ -18,8 +18,8 @@ class DeltaHedge(gym.Env):
                  
     self.s = spot_price
     self.k = strike_price
-    self.dt = 1/time_discrete
-    self.ttm = 21 * self.m * self.dt  # convert month to reaction time unit
+    self.dt = 1/year_days
+    self.ttm = 21 * month2maturity * self.dt  # convert month to reaction time unit
     self.hedge = stock_share
 
     self.mu = exp_return  # expected return
