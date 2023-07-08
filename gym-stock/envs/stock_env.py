@@ -54,7 +54,7 @@ class DeltaHedge(gym.Env):
     self.ttm = max(0, self.state[1] - self.dt)
     done = self.ttm < self.dt
 
-    lp = (s - s_1) * self.state[2] - abs(action - self.state[2]) * s * self.kappa -\
+    lp = (s - s_1) * self.hedge - abs(action - self.hedge) * s * self.kappa -\
       self.bs_price(s, self.k, self.rf, self.ttm, self.vol) +\
       self.bs_price(s_1, self.k, self.rf, self.state[1], self.vol)
 
@@ -62,7 +62,8 @@ class DeltaHedge(gym.Env):
       lp = lp - action * s * self.kappa
 
     reward = lp - self.cost * lp^2
-    next_state = (s/self.k, self.ttm, action)
+    next_state = (s/self.k, self.ttm)
+    self.hedge = action
     self.state = next_state
 
     return state, reward, done, next_state
