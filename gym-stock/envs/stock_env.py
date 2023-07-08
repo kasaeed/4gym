@@ -69,7 +69,7 @@ class DeltaHedge(gym.Env):
     d1 = (np.log(self.state[0]) + self.m * (self.rf - self.div + (self.vol**2) / 2.0)) / (self.vol * np.sqrt(self.m))
     d2 = d1 - self.vol * np.sqrt(self.m)
     call_bs_price = self.s * np.exp(-self.m * self.div) * norm.cdf(d1) - self.k * np.exp(-self.rf * self.m) * norm.cdf(d2)
-    put_bs_price = self.s * np.exp(-self.m * self.div) * norm.cdf(-d1) - self.k * np.exp(-self.rf * self.m) * norm.cdf(-d2)
+    put_bs_price = -self.s * np.exp(-self.m * self.div) * norm.cdf(-d1) + self.k * np.exp(-self.rf * self.m) * norm.cdf(-d2)
 
     return call_bs_price
   def greeks(self):
