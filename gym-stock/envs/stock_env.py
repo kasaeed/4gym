@@ -44,23 +44,22 @@ class DeltaHedge(gym.Env):
 
   def step(self, action):
     state = self.state
-    pos = action
 
     s_1 = self.state[0] * self.k
     s = s_1 * ((1 + self.mu * self.dt) + (np.randn * self.vol) * np.sqrt(self.dt))
 
-    ttm = max(0, self.state[1] - self.dt)
-    done = ttm < self.dt
+    self.ttm = max(0, self.state[1] - self.dt)
+    done = self.ttm < self.dt
 
-    lp = (s - s_1) * self.state[2] - abs(pos - self.state[2]) * s * self.kappa -\
-      self.bs_price(s, self.k, self.rf, ttm, self.vol) +\
+    lp = (s - s_1) * self.state[2] - abs(action - self.state[2]) * s * self.kappa -\
+      self.bs_price(s, self.k, self.rf, self.ttm, self.vol) +\
       self.bs_price(s_1, self.k, self.rf, self.state[1], self.vol)
 
     if done:
-      lp = lp - pos * s * self.kappa
+      lp = lp - action * s * self.kappa
 
     reward = lp - self.cost * lp^2
-    next_state = (s/self.k, ttm, pos)
+    next_state = (s/self.k, self.ttm, action)
     self.state = next_state
 
     return state, reward, done, next_state
