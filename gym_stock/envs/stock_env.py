@@ -7,6 +7,8 @@ from gym.utils import seeding
 
 
 class DeltaHedge(gym.Env):
+  metadata = {"render.modes": ["human"]}
+  
   def __init__(self, spot_price: float=100, strike_price: float=100,
                month2maturity: int=3, year_days: int=250, stock_share: float=0,
                exp_volatility=.2, exp_return=.05, risk_free=0.03, kappa=.01,
